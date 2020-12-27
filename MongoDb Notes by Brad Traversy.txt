@@ -1,0 +1,304 @@
+{
+    first_name: "John",
+    last_name:"Doe",
+    memberships: ["mem1", "mem2"],  //array
+    address:{
+    street:"4 main st",             //objects
+    city: Boston
+    }
+    contacts:[                      //array of objects
+             {name:"Brad", relationship: "friend"},
+             {name:"Lad", relationship: "friend"}
+]
+
+
+}
+
+
+//Create User
+
+db.createUser({
+          user: "brad",
+          pwd:"1234"
+          roles:[ "readWrite" , "dbAdmin"]
+});
+
+//collections
+db.createCollection('customers');
+{ "ok" : 1 }
+> show collections
+customers
+> db.customers.insert({first_name:"John", last_name: "Doe"});
+WriteResult({ "nInserted" : 1 })
+db.customers.find();
+{ "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"), "first_name" : "John", "last_name" : "Doe" }
+
+
+// we can add another attrib like gender in nosql
+//there are no restrictions like matching tables
+> db.customers.insert([{first_name:"Steven", last_name: "Smith"}, {first_name:"John", last_name:"Hawks", gender:"male"}]);
+BulkWriteResult({
+        "writeErrors" : [ ],
+        "writeConcernErrors" : [ ],
+        "nInserted" : 2,
+        "nUpserted" : 0,
+        "nMatched" : 0,
+        "nModified" : 0,
+        "nRemoved" : 0,
+        "upserted" : [ ]
+})
+
+// see you can have whatever fields you want
+> db.customers.find();
+{ "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"), "first_name" : "John", "last_name" : "Doe" }
+{ "_id" : ObjectId("5fe82fcac8e5a89be8eb1e3f"), "first_name" : "Steven", "last_name" : "Smith" }
+{ "_id" : ObjectId("5fe82fcac8e5a89be8eb1e40"), "first_name" : "John", "last_name" : "Hawks", "gender" : "male" }
+
+
+//things are messy lets make them pretty
+> db.customers.find().pretty();
+{
+        "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"),
+        "first_name" : "John",
+        "last_name" : "Doe"
+}
+{
+        "_id" : ObjectId("5fe82fcac8e5a89be8eb1e3f"),
+        "first_name" : "Steven",
+        "last_name" : "Smith"
+}
+{
+        "_id" : ObjectId("5fe82fcac8e5a89be8eb1e40"),
+        "first_name" : "John",
+        "last_name" : "Hawks",
+        "gender" : "male"
+}
+
+//now it looks like json :)
+
+//updating field
+//the first curly braces will match the field, the second is what we want as an update to it
+> db.customers.update({first_name: "John"}, {first_name:"John", last_name:"Doe", gender:"male"});
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+
+//see
+
+> db.customers.find().pretty();
+{
+        "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"),
+        "first_name" : "John",
+        "last_name" : "Doe",
+        "gender" : "male"
+}
+{
+        "_id" : ObjectId("5fe82fcac8e5a89be8eb1e3f"),
+        "first_name" : "Steven",
+        "last_name" : "Smith"
+}
+{
+        "_id" : ObjectId("5fe82fcac8e5a89be8eb1e40"),
+        "first_name" : "John",
+        "last_name" : "Hawks",
+        "gender" : "male"
+}
+//note: you are supposed to tell everything again in second parameter
+//to help this we use the set operator
+
+> db.customers.update({first_name: "Steven"},{$set:{gender:"male"}});
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 0 })
+//$set:
+//this will keep all the previous fields in its place without the need for rewriting them
+
+//incrementing a field value
+//added age
+> db.customers.update({first_name: "Steven"},{$set:{age:45}});
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+//$inc
+> db.customers.update({first_name: "Steven"},{$inc:{age:5}});
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.customers.find().pretty();
+{
+        "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"),
+        "first_name" : "John",
+        "last_name" : "Doe",
+        "gender" : "male"
+}
+{
+        "_id" : ObjectId("5fe82fcac8e5a89be8eb1e3f"),
+        "first_name" : "Steven",
+        "last_name" : "Smith",
+        "gender" : "male",
+        "age" : 50
+}
+{
+        "_id" : ObjectId("5fe82fcac8e5a89be8eb1e40"),
+        "first_name" : "John",
+        "last_name" : "Hawks",
+        "gender" : "male"
+}
+
+//removing a field
+$unset
+> db.customers.update({first_name: "Steven"},{$unset:{age:1}});
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.customers.find().pretty();
+{
+        "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"),
+        "first_name" : "John",
+        "last_name" : "Doe",
+        "gender" : "male"
+}
+{
+        "_id" : ObjectId("5fe82fcac8e5a89be8eb1e3f"),
+        "first_name" : "Steven",
+        "last_name" : "Smith",
+        "gender" : "male"
+}
+{
+        "_id" : ObjectId("5fe82fcac8e5a89be8eb1e40"),
+        "first_name" : "John",
+        "last_name" : "Hawks",
+        "gender" : "male"
+}
+//age removed
+//any number can be used instead of 1
+
+//What if we update a field thathas no match
+> db.customers.update({first_name: "Mary"},{first_name: "Mary", last_name:"Samson"});
+WriteResult({ "nMatched" : 0, "nUpserted" : 0, "nModified" : 0 })
+
+//now we will tell it if the match is not found
+//then insert it
+> db.customers.update({first_name: "Mary"},{first_name: "Mary", last_name:"Samson"}, {upsert: true});
+WriteResult({
+        "nMatched" : 0,
+        "nUpserted" : 1,
+        "nModified" : 0,
+        "_id" : ObjectId("5fe835378972321ef1a18b3a")
+})
+
+// we used a third parameter upsert and it inserted the unmatched field, look it also gave it a primary key by itself
+
+
+//Renaming a field
+//$rename
+> db.customers.update({first_name: "Steven"},{$rename: {"gender":"sex"}});
+WriteResult({ "nMatched" : 1, "nUpserted" : 0, "nModified" : 1 })
+> db.customers.find().pretty();
+{
+        "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"),
+        "first_name" : "John",
+        "last_name" : "Doe",
+        "gender" : "male"
+}
+{
+        "_id" : ObjectId("5fe82fcac8e5a89be8eb1e3f"),
+        "first_name" : "Steven",
+        "last_name" : "Smith",
+        "sex" : "male"
+}
+{
+        "_id" : ObjectId("5fe82fcac8e5a89be8eb1e40"),
+        "first_name" : "John",
+        "last_name" : "Hawks",
+        "gender" : "male"
+}
+{
+        "_id" : ObjectId("5fe835378972321ef1a18b3a"),
+        "first_name" : "Mary",
+        "last_name" : "Samson"
+}
+
+//removing documents
+> db.customers.remove({first_name:"Steven"});
+WriteResult({ "nRemoved" : 1 })
+> db.customers.find().pretty();
+{
+        "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"),
+        "first_name" : "John",
+        "last_name" : "Doe",
+        "gender" : "male"
+}
+{
+        "_id" : ObjectId("5fe82fcac8e5a89be8eb1e40"),
+        "first_name" : "John",
+        "last_name" : "Hawks",
+        "gender" : "male"
+}
+{
+        "_id" : ObjectId("5fe835378972321ef1a18b3a"),
+        "first_name" : "Mary",
+        "last_name" : "Samson"
+}
+//the above method will remove all the stevens 
+//to avoid this we use
+> db.customers.remove({first_name:"Steven"},{justOne:true});
+//the above line will remove only the first steven
+
+//finding a field
+> db.customers.find({first_name:"Mary"});
+{ "_id" : ObjectId("5fe835378972321ef1a18b3a"), "first_name" : "Mary", "last_name" : "Samson" }
+//this will give all Mary's information
+
+//if we want to find multiple fields or wanna check fields
+> db.customers.find({$or:[{first_name:"Mary"}, {first_name:"John"}]});
+
+{ "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"), "first_name" : "John", "last_name" : "Doe", "gender" : "male" }
+{ "_id" : ObjectId("5fe82fcac8e5a89be8eb1e40"), "first_name" : "John", "last_name" : "Hawks", "gender" : "male" }
+{ "_id" : ObjectId("5fe835378972321ef1a18b3a"), "first_name" : "Mary", "last_name" : "Samson" }
+
+//we can also use greater than and less than
+//$lt , $lte
+//$gt , $gte // for equal
+> db.customers.find({age:{$lt:12}});
+
+//Finding particular fields within objects
+db.customers.find({"address.city":"Boston"});
+//when we are dealing with objects, don't forget the quotes
+
+//to query an array
+like memberships in our very first example code
+db.customers.find({memberships:"mem1"});
+// will give all fields with mem1
+
+//SORTING
+> db.customers.find().sort({last_name:1});
+{ "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"), "first_name" : "John", "last_name" : "Doe", "gender" : "male" }
+{ "_id" : ObjectId("5fe82fcac8e5a89be8eb1e40"), "first_name" : "John", "last_name" : "Hawks", "gender" : "male" }
+{ "_id" : ObjectId("5fe835378972321ef1a18b3a"), "first_name" : "Mary", "last_name" : "Samson" }
+//you see 1 means sorting in ascending order
+//for descending use -1
+> db.customers.find().sort({last_name:-1});
+{ "_id" : ObjectId("5fe835378972321ef1a18b3a"), "first_name" : "Mary", "last_name" : "Samson" }
+{ "_id" : ObjectId("5fe82fcac8e5a89be8eb1e40"), "first_name" : "John", "last_name" : "Hawks", "gender" : "male" }
+{ "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"), "first_name" : "John", "last_name" : "Doe", "gender" : "male" }
+
+//Counting documents
+> db.customers.find().count();
+3
+//to specify our sorting
+> db.customers.find({gender:"male"}).count();
+2
+//we wanna find and see everybody but we wanna set limit if our records are too big
+> db.customers.find().limit(1);
+{ "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"), "first_name" : "John", "last_name" : "Doe", "gender" : "male" }
+
+//sort is used for showing data only in asc or desc order
+> db.customers.find().limit(1).sort({last_name:1});
+{ "_id" : ObjectId("5fe82e8ec8e5a89be8eb1e3e"), "first_name" : "John", "last_name" : "Doe", "gender" : "male" }
+
+//using forEach() to iterate thru data
+> db.customers.find().forEach(function(doc){print("Customer Name: "+doc.first_name)});
+Customer Name: John
+Customer Name: John
+Customer Name: Mary
+//function means a function
+//doc is a variable, you can use anything
+//after that is the body of the function
+//we are printing a statement and are iterating thru first_name's to see them all
+
+
+
+
+
+
